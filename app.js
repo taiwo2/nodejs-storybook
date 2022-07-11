@@ -5,6 +5,7 @@ const mongoose  = require('mongoose')
 const morgan = require('morgan')
 const connectDB= require('./config/db')
 const exphbs = require('express-handlebars')
+const methodOverride = require('method-override')
 const passport = require('passport')
 const session = require('express-session')
 const MongoStore= require('connect-mongo')
@@ -26,9 +27,11 @@ if (process.env.NODE_ENV === 'development'){
   app.use(morgan('dev'))
 }
 
+// handlebar
+const {formatDate, stripTags, truncate} = require('./helpers/hbs')
 
 /// handleBars
-app.engine('.hbs', exphbs.engine({defaultLayout: 'main', extname: '.hbs'}));
+app.engine('.hbs', exphbs.engine({ helpers: {formatDate,stripTags,truncate}, defaultLayout: 'main', extname: '.hbs'}));
 app.set('view engine','.hbs');
 // session middleware
 
@@ -38,12 +41,15 @@ app.use(session({
   saveUninitialized: false,
   store:  MongoStore.create({ mongoUrl: process.env.MONGO_URI})
 }))
-// store: MongoStore.create({ mongoUrl: 'mongodb+srv://<id+ password>@cluster0.cq7f2.mongodb.net/DBname?retryWrites=true&w=majority' })
-// }))
+
 // passport middleware
 app.use(passport.initialize())
 app.use(passport.session())
 
+// set global var
+app.use(function(req,res,next){
+  res.locals.user = req.user || null
+})
 
 // static
 app.use(express.static(path.join(__dirname, 'public')))
